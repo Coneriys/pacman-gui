@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Pacman GUI
+Comment=Graphical package manager for Arch Linux
+Exec=pacman-gui
+Icon=package-manager
+Terminal=false
+Categories=System;PackageManager;
+Keywords=pacman;package;manager;install;remove;update;AUR;
+StartupNotify=true

@@ -1,0 +1,52 @@
+# Build directories
+build/
+cmake-build-*/
+
+# CMake files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+
+# Compiled binaries
+pacman-gui
+*.o
+*.a
+*.so
+
+# Debug files
+*.dSYM/
+*.gdb_history
+.gdb_history
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+*.orig
+
+# Log files
+*.log
+
+# Package files
+*.tar.xz
+*.pkg.tar.xz
+*.pkg.tar.zst
+src/
+pkg/
+
+# makepkg files
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.zip
