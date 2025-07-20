@@ -303,3 +303,132 @@ void package_list_free(PackageList *list) {
     free(list->packages);
     free(list);
 }
+
+DependencyList* pacman_get_dependencies(const char *package_name) {
+    char cmd[512];
+    snprintf(cmd, sizeof(cmd), "pacman -Qi %s 2>/dev/null | grep 'Depends On' | cut -d ':' -f2", package_name);
+    
+    char *output = run_command(cmd);
+    if (!output) return NULL;
+    
+    DependencyList *list = malloc(sizeof(DependencyList));
+    list->dependencies = malloc(sizeof(char*) * 50);
+    list->count = 0;
+    
+    char *token = strtok(output, " \t\n");
+    while (token && list->count < 50) {
+        if (strcmp(token, "None") != 0) {
+            char *dep_name = strdup(token);
+            char *version_pos = strchr(dep_name, '>');
+            if (!version_pos) version_pos = strchr(dep_name, '<');
+            if (!version_pos) version_pos = strchr(dep_name, '=');
+            if (version_pos) *version_pos = '\0';
+            
+            list->dependencies[list->count++] = dep_name;
+        }
+        token = strtok(NULL, " \t\n");
+    }
+    
+    free(output);
+    return list;
+}
+
+DependencyList* pacman_get_required_by(const char *package_name) {
+    char cmd[512];
+    snprintf(cmd, sizeof(cmd), "pacman -Qi %s 2>/dev/null | grep 'Required By' | cut -d ':' -f2", package_name);
+    
+    char *output = run_command(cmd);
+    if (!output) return NULL;
+    
+    DependencyList *list = malloc(sizeof(DependencyList));
+    list->dependencies = malloc(sizeof(char*) * 50);
+    list->count = 0;
+    
+    char *token = strtok(output, " \t\n");
+    while (token && list->count < 50) {
+        if (strcmp(token, "None") != 0) {
+            list->dependencies[list->count++] = strdup(token);
+        }
+        token = strtok(NULL, " \t\n");
+    }
+    
+    free(output);
+    return list;
+}
+
+static DependencyNode* find_or_create_node(DependencyTree *tree, const char *name, int depth) {
+    for (int i = 0; i < tree->count; i++) {
+        if (strcmp(tree->nodes[i].name, name) == 0) {
+            if (depth < tree->nodes[i].depth) {
+                tree->nodes[i].depth = depth;
+            }
+            return &tree->nodes[i];
+        }
+    }
+    
+    if (tree->count >= tree->capacity) {
+        tree->capacity *= 2;
+        tree->nodes = realloc(tree->nodes, sizeof(DependencyNode) * tree->capacity);
+    }
+    
+    DependencyNode *node = &tree->nodes[tree->count++];
+    node->name = strdup(name);
+    node->depends = NULL;
+    node->required_by = NULL;
+    node->depth = depth;
+    
+    return node;
+}
+
+static void build_tree_recursive(DependencyTree *tree, const char *package_name, int current_depth, int max_depth) {
+    if (current_depth > max_depth) return;
+    
+    DependencyNode *node = find_or_create_node(tree, package_name, current_depth);
+    
+    if (!node->depends) {
+        node->depends = pacman_get_dependencies(package_name);
+        if (node->depends) {
+            for (int i = 0; i < node->depends->count; i++) {
+                build_tree_recursive(tree, node->depends->dependencies[i], current_depth + 1, max_depth);
+            }
+        }
+    }
+    
+    if (!node->required_by) {
+        node->required_by = pacman_get_required_by(package_name);
+    }
+}
+
+DependencyTree* pacman_build_dependency_tree(const char *package_name, int max_depth) {
+    DependencyTree *tree = malloc(sizeof(DependencyTree));
+    tree->nodes = malloc(sizeof(DependencyNode) * 100);
+    tree->count = 0;
+    tree->capacity = 100;
+    
+    build_tree_recursive(tree, package_name, 0, max_depth);
+    
+    return tree;
+}
+
+void dependency_list_free(DependencyList *list) {
+    if (!list) return;
+    
+    for (int i = 0; i < list->count; i++) {
+        free(list->dependencies[i]);
+    }
+    free(list->dependencies);
+    free(list);
+}
+
+void dependency_tree_free(DependencyTree *tree) {
+    if (!tree) return;
+    
+    for (int i = 0; i < tree->count; i++) {
+        free(tree->nodes[i].name);
+        dependency_list_free(tree->nodes[i].depends);
+        dependency_list_free(tree->nodes[i].required_by);
+    }
+    
+    free(tree->nodes);
+    free(tree);
+}

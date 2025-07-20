@@ -3,6 +3,7 @@
 
 #include <gtk-4.0/gtk/gtk.h>
 #include "../pacman_wrapper.h"
+#include "dependency_viewer.h"
 
 typedef struct {
     GtkWidget *window;
@@ -11,6 +12,7 @@ typedef struct {
     GtkWidget *install_btn;
     GtkWidget *remove_btn;
     GtkWidget *update_btn;
+    GtkWidget *deps_btn;
     GtkWidget *aur_search_btn;
     GtkWidget *status_label;
 
@@ -26,6 +28,7 @@ typedef struct {
     PackageList *current_packages;
     char *selected_package;
     gboolean operation_in_progress;
+    DependencyViewer *dep_viewer;
 } MainWindow;
 
 MainWindow* main_window_new(void);

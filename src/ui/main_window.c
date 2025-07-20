@@ -172,6 +172,7 @@ static void on_package_selected(GtkListBox *box, GtkListBoxRow *row, gpointer us
 
             gtk_widget_set_sensitive(win->install_btn, TRUE);
             gtk_widget_set_sensitive(win->remove_btn, TRUE);
+            gtk_widget_set_sensitive(win->deps_btn, TRUE);
         }
     }
 }
@@ -239,6 +240,23 @@ static void on_remove_clicked(GtkButton *button, gpointer user_data) {
     }
 }
 
+static void on_deps_clicked(GtkButton *button, gpointer user_data) {
+    MainWindow *win = (MainWindow*)user_data;
+    
+    if (!win->selected_package) {
+        gtk_label_set_text(GTK_LABEL(win->status_label), "Please select a package first");
+        return;
+    }
+    
+    if (!win->dep_viewer) {
+        win->dep_viewer = dependency_viewer_new();
+        gtk_window_set_transient_for(GTK_WINDOW(win->dep_viewer->window), GTK_WINDOW(win->window));
+    }
+    
+    dependency_viewer_set_package(win->dep_viewer, win->selected_package);
+    dependency_viewer_show(win->dep_viewer);
+}
+
 static void on_update_clicked(GtkButton *button, gpointer user_data) {
     MainWindow *win = (MainWindow*)user_data;
 
@@ -269,6 +287,7 @@ MainWindow* main_window_new(void) {
     win->selected_package = NULL;
     win->operation_in_progress = FALSE;
     win->log_window = NULL;
+    win->dep_viewer = NULL;
 
     // Create window
     win->window = gtk_window_new();
@@ -320,17 +339,21 @@ MainWindow* main_window_new(void) {
 
     win->install_btn = gtk_button_new_with_label("Install");
     win->remove_btn = gtk_button_new_with_label("Remove");
+    win->deps_btn = gtk_button_new_with_label("Dependencies");
     win->update_btn = gtk_button_new_with_label("Update System");
 
     gtk_widget_set_sensitive(win->install_btn, FALSE);
     gtk_widget_set_sensitive(win->remove_btn, FALSE);
+    gtk_widget_set_sensitive(win->deps_btn, FALSE);
 
     g_signal_connect(win->install_btn, "clicked", G_CALLBACK(on_install_clicked), win);
     g_signal_connect(win->remove_btn, "clicked", G_CALLBACK(on_remove_clicked), win);
+    g_signal_connect(win->deps_btn, "clicked", G_CALLBACK(on_deps_clicked), win);
     g_signal_connect(win->update_btn, "clicked", G_CALLBACK(on_update_clicked), win);
 
     gtk_box_append(GTK_BOX(btn_box), win->install_btn);
     gtk_box_append(GTK_BOX(btn_box), win->remove_btn);
+    gtk_box_append(GTK_BOX(btn_box), win->deps_btn);
     gtk_box_append(GTK_BOX(btn_box), win->update_btn);
 
     // Status bar
@@ -359,5 +382,6 @@ void main_window_show(MainWindow *win) {
 void main_window_free(MainWindow *win) {
     if (win->selected_package) free(win->selected_package);
     if (win->log_window) gtk_window_destroy(GTK_WINDOW(win->log_window));
+    if (win->dep_viewer) dependency_viewer_free(win->dep_viewer);
     free(win);
 }

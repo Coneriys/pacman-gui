@@ -12,6 +12,7 @@ add_executable(pacman-gui
         src/main.c
         src/pacman_wrapper.c
         src/ui/main_window.c
+        src/ui/dependency_viewer.c
 )
 
 target_include_directories(pacman-gui PRIVATE

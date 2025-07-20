@@ -7,6 +7,7 @@ A simple and intuitive GTK4 graphical interface for pacman package manager with 
 - 🔍 **Search packages** in official repositories and AUR
 - 📦 **Install/Remove packages** with real-time logs
 - 🔄 **System updates** with progress tracking
+- 📊 **Package dependency visualization** with interactive graph viewer
 - 🌙 **Dark theme support** - follows system theme automatically
 - 🛠️ **AUR support** via yay or paru
 - 📋 **Live installation logs** in separate window
@@ -63,7 +64,8 @@ Or find "Pacman GUI" in your application menu.
 2. **Choose source**: Select "Official Repos" or "AUR" from dropdown
 3. **Install**: Select package from list and click Install
 4. **Remove**: Select installed package and click Remove
-5. **Update system**: Click "Update System" button
+5. **View dependencies**: Select package and click "Dependencies" to open dependency graph viewer
+6. **Update system**: Click "Update System" button
 
 ### AUR Support
 
@@ -77,14 +79,17 @@ src/
 ├── pacman_wrapper.c    # Package manager backend
 ├── pacman_wrapper.h    # Backend interface
 └── ui/
-    ├── main_window.c   # Main GUI implementation
-    └── main_window.h   # GUI interface
+    ├── main_window.c       # Main GUI implementation
+    ├── main_window.h       # GUI interface
+    ├── dependency_viewer.c # Dependency visualization component
+    └── dependency_viewer.h # Dependency viewer interface
 ```
 
 ### Key Components
 
-- **pacman_wrapper**: Handles pacman/AUR operations asynchronously
-- **main_window**: GTK4 interface with real-time log display
+- **pacman_wrapper**: Handles pacman/AUR operations and dependency parsing asynchronously
+- **main_window**: GTK4 interface with real-time log display and dependency viewer integration
+- **dependency_viewer**: Interactive dependency graph visualization with Cairo rendering
 - **Async operations**: Non-blocking package operations with live output
 
 ## Configuration
@@ -128,7 +133,7 @@ Arch Linux is powerful but can be intimidating for newcomers. This GUI provides:
 
 ## Roadmap
 
-- [ ] Package dependency visualization
+- [x] Package dependency visualization
 - [ ] Installed packages management
 - [ ] Package categories/groups
 - [ ] Configuration settings dialog
