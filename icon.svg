@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e40af;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e3a8a;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.2" flood-color="#000"/>
+    </filter>
+  </defs>
+  
+  <!-- Rounded square background -->
+  <rect width="128" height="128" rx="28" fill="url(#bgGradient)" filter="url(#shadow)"/>
+  
+  <!-- Main package box -->
+  <rect x="24" y="32" width="80" height="48" rx="8" fill="#f59e0b" filter="url(#shadow)"/>
+  
+  <!-- Package stripes/tape -->
+  <rect x="24" y="48" width="80" height="6" fill="#d97706" opacity="0.6"/>
+  <rect x="24" y="58" width="80" height="6" fill="#d97706" opacity="0.6"/>
+  
+  <!-- Pacman logo on package -->
+  <g transform="translate(64, 56) rotate(23.5)">
+    <!-- Pacman shape (circle with triangular mouth) -->
+    <path d="M 0 0 L 10 0 A 10 10 0 1 1 7 -7 Z" fill="#ffffff" opacity="0.9"/>
+  </g>
+  <!-- Small dot (food/package) -->
+  <circle cx="80" cy="56" r="1.5" fill="#ffffff" opacity="0.8"/>
+  
+  <!-- GUI window representation -->
+  <rect x="32" y="88" width="64" height="24" rx="4" fill="#ffffff" opacity="0.2" filter="url(#shadow)"/>
+  
+  <!-- Download/install arrow (centered) -->
+  <g transform="translate(64, 100)">
+    <path d="M 0 -6 L 0 6 M -4 2 L 0 6 L 4 2" stroke="#ffffff" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.8"/>
+  </g>
+</svg>

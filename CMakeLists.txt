@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(pacman-gui VERSION 1.0.0 LANGUAGES C)
+project(pacman-gui VERSION 1.2.0 LANGUAGES C)
 
 set(CMAKE_C_STANDARD 11)
 
@@ -40,9 +40,15 @@ target_link_directories(pacman-gui PRIVATE
 install(TARGETS pacman-gui DESTINATION bin)
 install(FILES pacman-gui.desktop DESTINATION share/applications)
 
+# Install icons
+install(FILES icon.svg DESTINATION share/icons/hicolor/scalable/apps RENAME pacman-gui.svg)
+install(FILES icon-48.png DESTINATION share/icons/hicolor/48x48/apps RENAME pacman-gui.png)
+install(FILES icon-64.png DESTINATION share/icons/hicolor/64x64/apps RENAME pacman-gui.png)
+install(FILES icon-128.png DESTINATION share/icons/hicolor/128x128/apps RENAME pacman-gui.png)
+
 # CPack configuration for source package
 set(CPACK_PACKAGE_VERSION_MAJOR "1")
-set(CPACK_PACKAGE_VERSION_MINOR "0")
+set(CPACK_PACKAGE_VERSION_MINOR "2")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(CPACK_SOURCE_GENERATOR "TGZ")
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")

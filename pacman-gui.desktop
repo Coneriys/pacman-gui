@@ -2,10 +2,10 @@
 Version=1.0
 Type=Application
 Name=Pacman GUI
-Comment=Graphical package manager for Arch Linux
+Comment=Modern graphical package manager for Arch Linux with AUR support
 Exec=pacman-gui
-Icon=package-manager
+Icon=pacman-gui
 Terminal=false
 Categories=System;PackageManager;
-Keywords=pacman;package;manager;install;remove;update;AUR;
+Keywords=pacman;package;manager;install;remove;update;AUR;cache;dependency;
 StartupNotify=true

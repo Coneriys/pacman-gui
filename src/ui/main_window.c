@@ -300,26 +300,24 @@ static void on_update_clicked(GtkButton *button, gpointer user_data) {
     }
 }
 
-static void populate_installed_packages(MainWindow *win) {
-    gtk_label_set_text(GTK_LABEL(win->status_label), "Loading installed packages...");
-
-    // Clear previous results
-    GtkWidget *child = gtk_widget_get_first_child(win->installed_list);
-    while (child) {
-        GtkWidget *next = gtk_widget_get_next_sibling(child);
-        gtk_list_box_remove(GTK_LIST_BOX(win->installed_list), child);
-        child = next;
-    }
-
+static void on_installed_packages_loaded(PackageList *packages, gpointer user_data) {
+    MainWindow *win = (MainWindow*)user_data;
+    
     if (win->installed_packages) {
         package_list_free(win->installed_packages);
     }
-
-    win->installed_packages = pacman_list_installed();
     
-    if (win->installed_packages) {
-        for (int i = 0; i < win->installed_packages->count; i++) {
-            Package *pkg = &win->installed_packages->packages[i];
+    win->installed_packages = packages;
+    
+    if (packages) {
+        // Update progress indicator
+        char progress_text[128];
+        snprintf(progress_text, sizeof(progress_text), "Processing %d packages...", packages->count);
+        gtk_label_set_text(GTK_LABEL(win->loading_progress_label), progress_text);
+        
+        // Add packages to UI
+        for (int i = 0; i < packages->count; i++) {
+            Package *pkg = &packages->packages[i];
 
             GtkWidget *row = gtk_list_box_row_new();
             GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
@@ -349,12 +347,43 @@ static void populate_installed_packages(MainWindow *win) {
         }
 
         char status[256];
-        snprintf(status, sizeof(status), "Loaded %d installed packages",
-                win->installed_packages->count);
+        snprintf(status, sizeof(status), "Loaded %d installed packages", packages->count);
         gtk_label_set_text(GTK_LABEL(win->status_label), status);
     } else {
         gtk_label_set_text(GTK_LABEL(win->status_label), "Failed to load installed packages");
     }
+    
+    // Stop spinner and show list with smooth transition
+    gtk_spinner_stop(GTK_SPINNER(win->installed_spinner));
+    gtk_stack_set_transition_type(GTK_STACK(win->installed_stack), GTK_STACK_TRANSITION_TYPE_SLIDE_DOWN);
+    gtk_stack_set_visible_child_name(GTK_STACK(win->installed_stack), "list");
+    
+    // Enable refresh button
+    gtk_widget_set_sensitive(win->refresh_installed_btn, TRUE);
+}
+
+static void populate_installed_packages(MainWindow *win) {
+    gtk_label_set_text(GTK_LABEL(win->status_label), "Loading installed packages...");
+
+    // Clear previous results
+    GtkWidget *child = gtk_widget_get_first_child(win->installed_list);
+    while (child) {
+        GtkWidget *next = gtk_widget_get_next_sibling(child);
+        gtk_list_box_remove(GTK_LIST_BOX(win->installed_list), child);
+        child = next;
+    }
+
+    // Show spinner with smooth transition
+    gtk_stack_set_transition_type(GTK_STACK(win->installed_stack), GTK_STACK_TRANSITION_TYPE_SLIDE_UP);
+    gtk_stack_set_visible_child_name(GTK_STACK(win->installed_stack), "spinner");
+    gtk_spinner_start(GTK_SPINNER(win->installed_spinner));
+    gtk_widget_set_sensitive(win->refresh_installed_btn, FALSE);
+    
+    // Update progress
+    gtk_label_set_text(GTK_LABEL(win->loading_progress_label), "Querying system packages...");
+
+    // Start async loading
+    pacman_list_installed_async(on_installed_packages_loaded, win);
 }
 
 static void on_refresh_installed_clicked(GtkButton *button, gpointer user_data) {
@@ -379,6 +408,16 @@ static void on_installed_package_selected(GtkListBox *box, GtkListBoxRow *row, g
             gtk_widget_set_sensitive(win->remove_btn, TRUE);
             gtk_widget_set_sensitive(win->deps_btn, TRUE);
         }
+    }
+}
+
+static void on_notebook_page_switched(GtkNotebook *notebook, GtkWidget *page, guint page_num, gpointer user_data) {
+    MainWindow *win = (MainWindow*)user_data;
+    
+    // If switching to installed packages tab (page 1) and packages not loaded yet
+    if (page_num == 1 && !win->installed_packages_loaded) {
+        win->installed_packages_loaded = TRUE;
+        populate_installed_packages(win);
     }
 }
 
@@ -482,6 +521,7 @@ MainWindow* main_window_new(void) {
     win->dep_viewer = NULL;
     win->current_packages = NULL;
     win->installed_packages = NULL;
+    win->installed_packages_loaded = FALSE;
 
     // Create window
     win->window = gtk_window_new();
@@ -497,6 +537,7 @@ MainWindow* main_window_new(void) {
 
     // Create notebook for tabs
     win->notebook = gtk_notebook_new();
+    g_signal_connect(win->notebook, "switch-page", G_CALLBACK(on_notebook_page_switched), win);
 
     // === SEARCH TAB ===
     GtkWidget *search_tab = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
@@ -547,9 +588,32 @@ MainWindow* main_window_new(void) {
     g_signal_connect(win->refresh_installed_btn, "clicked", G_CALLBACK(on_refresh_installed_clicked), win);
     gtk_box_append(GTK_BOX(installed_controls), win->refresh_installed_btn);
 
-    // Package list for installed packages
+    // Stack for switching between spinner and list
+    win->installed_stack = gtk_stack_new();
+    gtk_widget_set_vexpand(win->installed_stack, TRUE);
+    
+    // Spinner page
+    GtkWidget *spinner_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+    gtk_widget_set_valign(spinner_box, GTK_ALIGN_CENTER);
+    gtk_widget_set_halign(spinner_box, GTK_ALIGN_CENTER);
+    
+    win->installed_spinner = gtk_spinner_new();
+    gtk_widget_set_size_request(win->installed_spinner, 48, 48);
+    
+    GtkWidget *loading_label = gtk_label_new("Loading installed packages...");
+    gtk_widget_add_css_class(loading_label, "dim-label");
+    
+    win->loading_progress_label = gtk_label_new("Initializing...");
+    gtk_widget_add_css_class(win->loading_progress_label, "caption");
+    
+    gtk_box_append(GTK_BOX(spinner_box), win->installed_spinner);
+    gtk_box_append(GTK_BOX(spinner_box), loading_label);
+    gtk_box_append(GTK_BOX(spinner_box), win->loading_progress_label);
+    
+    gtk_stack_add_named(GTK_STACK(win->installed_stack), spinner_box, "spinner");
+
+    // Package list page
     GtkWidget *installed_scrolled = gtk_scrolled_window_new();
-    gtk_widget_set_vexpand(installed_scrolled, TRUE);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(installed_scrolled),
                                    GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 
@@ -557,9 +621,34 @@ MainWindow* main_window_new(void) {
     g_signal_connect(win->installed_list, "row-selected",
                      G_CALLBACK(on_installed_package_selected), win);
     gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(installed_scrolled), win->installed_list);
+    
+    gtk_stack_add_named(GTK_STACK(win->installed_stack), installed_scrolled, "list");
+    
+    // Initial loading state with placeholder
+    GtkWidget *placeholder_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 15);
+    gtk_widget_set_valign(placeholder_box, GTK_ALIGN_CENTER);
+    gtk_widget_set_halign(placeholder_box, GTK_ALIGN_CENTER);
+    
+    GtkWidget *package_icon = gtk_label_new("📦");
+    gtk_label_set_markup(GTK_LABEL(package_icon), "<span size='xx-large'>📦</span>");
+    
+    GtkWidget *placeholder_label = gtk_label_new("Installed packages will be loaded when you switch to this tab");
+    gtk_widget_add_css_class(placeholder_label, "dim-label");
+    
+    GtkWidget *click_hint = gtk_label_new("This helps keep the app startup fast");
+    gtk_widget_add_css_class(click_hint, "caption");
+    
+    gtk_box_append(GTK_BOX(placeholder_box), package_icon);
+    gtk_box_append(GTK_BOX(placeholder_box), placeholder_label);
+    gtk_box_append(GTK_BOX(placeholder_box), click_hint);
+    
+    gtk_stack_add_named(GTK_STACK(win->installed_stack), placeholder_box, "placeholder");
+    
+    // Set initial state to placeholder
+    gtk_stack_set_visible_child_name(GTK_STACK(win->installed_stack), "placeholder");
 
     gtk_box_append(GTK_BOX(installed_tab), installed_controls);
-    gtk_box_append(GTK_BOX(installed_tab), installed_scrolled);
+    gtk_box_append(GTK_BOX(installed_tab), win->installed_stack);
 
     // Add tabs to notebook
     gtk_notebook_append_page(GTK_NOTEBOOK(win->notebook), search_tab,
@@ -620,6 +709,9 @@ MainWindow* main_window_new(void) {
 
     // Detect AUR helper on startup
     set_aur_helper(detect_aur_helper());
+
+    // Don't load installed packages immediately to speed up startup
+    win->installed_packages_loaded = FALSE;
 
     return win;
 }

@@ -16,6 +16,17 @@ typedef struct {
     pid_t child_pid;
 } AsyncOperation;
 
+typedef struct {
+    PackageListCallback callback;
+    gpointer user_data;
+} AsyncPackageLoadData;
+
+typedef struct {
+    PackageListCallback callback;
+    PackageList *packages;
+    gpointer user_data;
+} PackageLoadResult;
+
 AURHelper detect_aur_helper(void) {
     if (system("which yay > /dev/null 2>&1") == 0) {
         return AUR_HELPER_YAY;
@@ -496,4 +507,50 @@ char* pacman_get_cache_size(void) {
     if (newline) *newline = '\0';
     
     return output;
+}
+
+static gboolean call_package_list_callback(gpointer data) {
+    PackageLoadResult *result = (PackageLoadResult*)data;
+    
+    result->callback(result->packages, result->user_data);
+    
+    g_free(result);
+    return FALSE; // Remove from idle queue
+}
+
+static gpointer async_load_installed_packages(gpointer data) {
+    AsyncPackageLoadData *async_data = (AsyncPackageLoadData*)data;
+    
+    PackageList *packages = pacman_list_installed();
+    
+    // Create result structure for main thread callback
+    PackageLoadResult *result = g_malloc(sizeof(PackageLoadResult));
+    result->callback = async_data->callback;
+    result->packages = packages;
+    result->user_data = async_data->user_data;
+    
+    // Schedule the callback to be called in the main thread
+    g_idle_add(call_package_list_callback, result);
+    
+    g_free(async_data);
+    return NULL;
+}
+
+gboolean pacman_list_installed_async(PackageListCallback callback, gpointer user_data) {
+    if (!callback) return FALSE;
+    
+    AsyncPackageLoadData *async_data = g_malloc(sizeof(AsyncPackageLoadData));
+    async_data->callback = callback;
+    async_data->user_data = user_data;
+    
+    // Start the background thread
+    GThread *thread = g_thread_new("load_installed", async_load_installed_packages, async_data);
+    
+    if (thread) {
+        g_thread_unref(thread);  // We don't need to wait for it
+        return TRUE;
+    }
+    
+    g_free(async_data);
+    return FALSE;
 }

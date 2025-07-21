@@ -17,6 +17,9 @@ typedef struct {
     // Installed packages tab widgets
     GtkWidget *installed_list;
     GtkWidget *refresh_installed_btn;
+    GtkWidget *installed_spinner;
+    GtkWidget *installed_stack;
+    GtkWidget *loading_progress_label;
     
     // Buttons (shared between tabs)
     GtkWidget *install_btn;
@@ -38,6 +41,7 @@ typedef struct {
     PackageList *installed_packages;
     char *selected_package;
     gboolean operation_in_progress;
+    gboolean installed_packages_loaded;
     DependencyViewer *dep_viewer;
 } MainWindow;
 

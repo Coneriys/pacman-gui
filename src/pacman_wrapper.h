@@ -23,6 +23,7 @@ typedef enum {
 } AURHelper;
 
 typedef void (*LogCallback)(const char *line, gpointer user_data);
+typedef void (*PackageListCallback)(PackageList *list, gpointer user_data);
 
 typedef struct {
     char **dependencies;
@@ -48,6 +49,7 @@ gboolean pacman_install_async(const char *package_name, LogCallback callback, gp
 gboolean pacman_remove_async(const char *package_name, LogCallback callback, gpointer user_data);
 gboolean aur_install_async(const char *package_name, LogCallback callback, gpointer user_data);
 PackageList* pacman_list_installed(void);
+gboolean pacman_list_installed_async(PackageListCallback callback, gpointer user_data);
 PackageList* pacman_list_updates(void);
 gboolean pacman_update_system_async(LogCallback callback, gpointer user_data);
 gboolean pacman_clean_cache_async(LogCallback callback, gpointer user_data);
