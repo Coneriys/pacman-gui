@@ -50,6 +50,9 @@ gboolean aur_install_async(const char *package_name, LogCallback callback, gpoin
 PackageList* pacman_list_installed(void);
 PackageList* pacman_list_updates(void);
 gboolean pacman_update_system_async(LogCallback callback, gpointer user_data);
+gboolean pacman_clean_cache_async(LogCallback callback, gpointer user_data);
+gboolean pacman_clean_all_cache_async(LogCallback callback, gpointer user_data);
+char* pacman_get_cache_size(void);
 
 void package_list_free(PackageList *list);
 char* pacman_get_package_info(const char *package_name);

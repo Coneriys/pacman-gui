@@ -263,6 +263,50 @@ gboolean pacman_update_system_async(LogCallback callback, gpointer user_data) {
     return run_command_async("pkexec pacman -Syu --noconfirm", callback, user_data);
 }
 
+PackageList* pacman_list_installed(void) {
+    char *output = run_command("pacman -Q");
+    if (!output) return NULL;
+
+    PackageList *list = malloc(sizeof(PackageList));
+    list->packages = malloc(sizeof(Package) * 1000);
+    list->count = 0;
+
+    char *line = strtok(output, "\n");
+    while (line && list->count < 1000) {
+        char *space = strchr(line, ' ');
+        if (space) {
+            Package *pkg = &list->packages[list->count];
+            pkg->name = strndup(line, space - line);
+            pkg->version = strdup(space + 1);
+            pkg->repository = strdup("local");
+            
+            // Get detailed package info including description
+            char info_cmd[256];
+            snprintf(info_cmd, sizeof(info_cmd), "pacman -Qi %s 2>/dev/null | grep 'Description' | cut -d ':' -f2-", pkg->name);
+            char *desc_output = run_command(info_cmd);
+            if (desc_output && strlen(desc_output) > 1) {
+                // Remove leading whitespace and newline
+                char *desc_start = desc_output;
+                while (*desc_start == ' ' || *desc_start == '\t') desc_start++;
+                char *desc_end = strchr(desc_start, '\n');
+                if (desc_end) *desc_end = '\0';
+                pkg->description = strdup(desc_start);
+                free(desc_output);
+            } else {
+                pkg->description = strdup("No description available");
+                if (desc_output) free(desc_output);
+            }
+            
+            pkg->installed = TRUE;
+            list->count++;
+        }
+        line = strtok(NULL, "\n");
+    }
+
+    free(output);
+    return list;
+}
+
 PackageList* pacman_list_updates(void) {
     char *output = run_command("pacman -Qu");
     if (!output) return NULL;
@@ -431,4 +475,25 @@ void dependency_tree_free(DependencyTree *tree) {
     
     free(tree->nodes);
     free(tree);
+}
+
+gboolean pacman_clean_cache_async(LogCallback callback, gpointer user_data) {
+    return run_command_async("pkexec pacman -Sc --noconfirm", callback, user_data);
+}
+
+gboolean pacman_clean_all_cache_async(LogCallback callback, gpointer user_data) {
+    return run_command_async("pkexec pacman -Scc --noconfirm", callback, user_data);
+}
+
+char* pacman_get_cache_size(void) {
+    char *output = run_command("du -sh /var/cache/pacman/pkg 2>/dev/null | cut -f1");
+    if (!output || strlen(output) == 0) {
+        if (output) free(output);
+        return strdup("Unknown");
+    }
+    
+    char *newline = strchr(output, '\n');
+    if (newline) *newline = '\0';
+    
+    return output;
 }
