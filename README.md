@@ -146,21 +146,6 @@ make
 - GTK4 conventions
 - Comment public functions
 
-## Performance Features
-
-### v1.2.0 Performance Improvements
-- 🚀 **Instant startup**: Application launches immediately without waiting for package enumeration
-- ⚡ **Smart lazy loading**: Installed packages load only when you visit that tab
-- 🔄 **Async operations**: All package operations run in background threads
-- 💫 **Smooth UI**: Loading spinners and progress indicators prevent UI freezing
-- 🎯 **Responsive experience**: Even with thousands of installed packages
-
-### Technical Improvements
-- **Background threading** for package enumeration using GThread
-- **Idle callbacks** for safe main thread updates
-- **Stack-based loading states** with smooth slide transitions
-- **Memory efficient** package loading with proper cleanup
-
 ## Why This Project?
 
 Arch Linux is powerful but can be intimidating for newcomers. This GUI provides:
@@ -174,9 +159,9 @@ Arch Linux is powerful but can be intimidating for newcomers. This GUI provides:
 ## Roadmap
 
 - [x] Package dependency visualization
-- [x] **Installed packages management** ✨ *v1.2.0*
-- [x] **Package cache cleanup** ✨ *v1.2.0*
-- [x] **Async loading with preloaders** ✨ *v1.2.0*
+- [x] Installed packages management
+- [x] Package cache cleanup
+- [x] Async loading with preloaders
 - [ ] Package categories/groups
 - [ ] Configuration settings dialog
 - [ ] Repository management
